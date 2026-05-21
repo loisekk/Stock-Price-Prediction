@@ -28,7 +28,7 @@
 
 </div>
 
-![Stock Price Prediction Demo](assets/stock_price_dash.gif)
+![Stock Price Prediction Demo](assets/stock-price-dash.gif)
 ---
 
 ## 📁 Repository Structure
