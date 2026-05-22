@@ -31,22 +31,8 @@
 ![Stock Price Prediction Demo](assets/stock-price-dash.gif)
 ---
 
-## 📁 Repository Structure
 
-```
-stock-price-prediction/
-│
-├── 📓 Stock_Price_Prediction.ipynb              # End-to-end ML pipeline
-├── 📊 stock_data.csv                            # Raw dataset · 365 days · 5 stocks
-│
-├── 🤖 Linear_Regression_StockPrice_Prediction.pkl   # Best model artifact
-├── ⚖️  scaler.pkl                               # Fitted StandardScaler
-├── 🗂️  columns.pkl                              # Feature column registry (14 cols)
-│
-└── 📄 README.md
-```
 
----
 
 ## 📊 Dataset Overview
 
