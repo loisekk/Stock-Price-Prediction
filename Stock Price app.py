@@ -318,10 +318,6 @@ def load_models():
         cols_path  = BASE_DIR / "columns.pkl"
         scaler_path = BASE_DIR / "scaler.pkl"
 
-        # Debug — remove after fix confirmed
-        st.write("Looking in:", str(BASE_DIR))
-        st.write("Files found:", [f.name for f in BASE_DIR.iterdir() if f.suffix == ".pkl"])
-
         with open(model_path, "rb") as f:
             model = pickle.load(f)
         with open(cols_path, "rb") as f:
