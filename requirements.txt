@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-plotly
-=======
 streamlit
 pandas
 numpy
@@ -8,4 +5,3 @@ matplotlib
 seaborn
 plotly
 yfinance
->>>>>>> 9e77a8b77769904197d59db3857db2c753e0a855
