@@ -298,6 +298,9 @@ hr { border-color: rgba(0,217,255,0.1) !important; }
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
+section[data-testid="stSidebar"] {transform: none !important; min-width: 300px !important; width: 300px !important;}
+button[data-testid="collapsedControl"] {display: none !important;}
+[data-testid="baseButton-headerNoPadding"] {display: none !important;}
 </style>
 """, unsafe_allow_html=True)
 
