@@ -1,8 +1,0 @@
-plotly
-streamlit
-pandas
-numpy
-matplotlib
-seaborn
-pickle5
-yfinance
