@@ -306,23 +306,31 @@ button[data-testid="collapsedControl"] {display: none !important;}
 
 # ─── MODEL LOADING ──────────────────────────────────────────────────────────────
 import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
+# More reliable on Streamlit Cloud
+BASE_DIR = Path(__file__).parent.resolve()
 
 @st.cache_resource
 def load_models():
     try:
-        with open(os.path.join(BASE_DIR, "columns.pkl"), "rb") as f:
-            columns = pickle.load(f)
-        with open(os.path.join(BASE_DIR, "scaler.pkl"), "rb") as f:
-            scaler = pickle.load(f)
-        with open(os.path.join(BASE_DIR, "Linear_Regression_StockPrice_Prediction.pkl"), "rb") as f:
+        model_path = BASE_DIR / "Linear_Regression_StockPrice_Prediction.pkl"
+        cols_path  = BASE_DIR / "columns.pkl"
+        scaler_path = BASE_DIR / "scaler.pkl"
+
+        # Debug — remove after fix confirmed
+        st.write("Looking in:", str(BASE_DIR))
+        st.write("Files found:", [f.name for f in BASE_DIR.iterdir() if f.suffix == ".pkl"])
+
+        with open(model_path, "rb") as f:
             model = pickle.load(f)
+        with open(cols_path, "rb") as f:
+            columns = pickle.load(f)
+        with open(scaler_path, "rb") as f:
+            scaler = pickle.load(f)
         return model, scaler, columns, True
     except Exception as e:
-        
+        st.error(f"Load error: {e}")
         return None, None, None, False
 
 model, scaler, columns, model_loaded = load_models()
