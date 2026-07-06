@@ -656,21 +656,90 @@ else:
             st.markdown('<div class="section-header">🎛️ Input Features</div>', unsafe_allow_html=True)
 
             if model_loaded and columns is not None:
+                # Fetch 5 correlated stocks to compute real features
+                CORRELATED_TICKERS = {
+                    "Stock_1": ticker,  # User-selected stock (e.g. AAPL)
+                    "Stock_2": "MSFT",
+                    "Stock_3": "GOOGL",
+                    "Stock_4": "AMZN",
+                    "Stock_5": "NVDA",
+                }
+
+                @st.cache_data(ttl=600)
+                def fetch_correlated_stocks(ticker_used):
+                    ticker_map = dict(CORRELATED_TICKERS)
+                    ticker_map["Stock_1"] = ticker_used
+                    stock_data = {}
+                    for key, tk in ticker_map.items():
+                        try:
+                            data = yf.Ticker(tk).history(period=period)
+                            if not data.empty:
+                                stock_data[key] = data["Close"]
+                        except:
+                            pass
+                    if len(stock_data) >= 2:
+                        return pd.DataFrame(stock_data)
+                    return pd.DataFrame()
+
+                multi_df = fetch_correlated_stocks(ticker)
+
+                if not multi_df.empty and len(multi_df) >= 6:
+                    latest = multi_df.iloc[-1]
+                    prev = multi_df.iloc[-2]
+
+                    # Compute features matching the training pipeline
+                    computed = {}
+                    computed["Stock_1"] = float(latest.get("Stock_1", 100))
+                    computed["Stock_2"] = float(latest.get("Stock_2", 100))
+                    computed["Stock_3"] = float(latest.get("Stock_3", 100))
+                    computed["Stock_4"] = float(latest.get("Stock_4", 100))
+                    computed["Stock_5"] = float(latest.get("Stock_5", 100))
+
+                    now = datetime.now()
+                    computed["Months"] = float(now.month)
+                    computed["Day"] = float(now.day)
+
+                    # MA_5: 5-day moving average of Stock_1
+                    s1_series = multi_df["Stock_1"].dropna()
+                    computed["MA_5"] = float(s1_series.tail(5).mean()) if len(s1_series) >= 5 else computed["Stock_1"]
+
+                    # Volatility_5: 5-day rolling std of Stock_1
+                    computed["Volatility_5"] = float(s1_series.tail(5).std()) if len(s1_series) >= 5 else 0.0
+
+                    # Daily_Return: pct change of Stock_1
+                    if len(s1_series) >= 2:
+                        computed["Daily_Return"] = float((s1_series.iloc[-1] / s1_series.iloc[-2]) - 1)
+                    else:
+                        computed["Daily_Return"] = 0.0
+
+                    # Stock_2 features
+                    s2_series = multi_df["Stock_2"].dropna() if "Stock_2" in multi_df.columns else pd.Series()
+                    if len(s2_series) >= 2:
+                        computed["Stock_2_Lag_1"] = float(s2_series.iloc[-2])
+                    else:
+                        computed["Stock_2_Lag_1"] = computed["Stock_2"]
+
+                    if len(s2_series) >= 5:
+                        computed["Stock_2_MA_5"] = float(s2_series.tail(5).mean())
+                        computed["Stock_2_Volatility"] = float(s2_series.tail(5).std())
+                    else:
+                        computed["Stock_2_MA_5"] = computed["Stock_2"]
+                        computed["Stock_2_Volatility"] = 0.0
+
+                    if len(s2_series) >= 2:
+                        computed["Stock_2_Return"] = float((s2_series.iloc[-1] / s2_series.iloc[-2]) - 1)
+                    else:
+                        computed["Stock_2_Return"] = 0.0
+
+                    st.info(f"Features computed from 5 correlated stocks: {', '.join(CORRELATED_TICKERS.values())}")
+                else:
+                    st.warning("Could not fetch all 5 correlated stocks. Using fallback defaults.")
+                    computed = {col: float(df["Close"].iloc[-1]) if not df.empty else 100.0 for col in columns}
+
                 inputs = {}
                 with st.form("prediction_form"):
                     for col_name in columns:
-                        if "open" in col_name.lower() or "Open" in col_name:
-                            default_val = float(df["Open"].iloc[-1]) if not df.empty else 100.0
-                        elif "high" in col_name.lower():
-                            default_val = float(df["High"].iloc[-1]) if not df.empty else 105.0
-                        elif "low" in col_name.lower():
-                            default_val = float(df["Low"].iloc[-1]) if not df.empty else 95.0
-                        elif "volume" in col_name.lower():
-                            default_val = float(df["Volume"].iloc[-1]) if not df.empty else 1000000.0
-                        elif "rsi" in col_name.lower():
-                            default_val = float(rsi_val)
-                        else:
-                            default_val = float(df["Close"].iloc[-1]) if not df.empty else 100.0
+                        default_val = computed.get(col_name, 100.0)
                         inputs[col_name] = st.number_input(
                             f"{col_name}", value=round(default_val, 4),
                             format="%.4f", key=col_name
@@ -762,13 +831,14 @@ else:
                 """, unsafe_allow_html=True)
 
             # Model info card
-            st.markdown("""
+            st.markdown(f"""
             <div class="insight-card">
                 <div style="font-size:0.75rem;font-weight:700;color:#00b4d8;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.5rem;">Model Architecture</div>
                 <div style="font-size:0.82rem;color:#8ba7c7;line-height:1.6;">
                     <b style="color:#e8f4f8;">Algorithm:</b> Linear Regression<br>
                     <b style="color:#e8f4f8;">Scaling:</b> StandardScaler (z-score normalization)<br>
-                    <b style="color:#e8f4f8;">Features:</b> OHLCV + Technical Indicators<br>
+                    <b style="color:#e8f4f8;">Features:</b> 5 correlated stocks + technicals (MA, volatility, returns, lags)<br>
+                    <b style="color:#e8f4f8;">Stocks:</b> {', '.join(CORRELATED_TICKERS.values())}<br>
                     <b style="color:#e8f4f8;">Framework:</b> scikit-learn
                 </div>
             </div>
